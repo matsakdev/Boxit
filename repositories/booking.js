@@ -1,11 +1,23 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
-    startTime: Date,
-    endTime: Date,
+    startTime: {
+        type: Date,
+        required: true
+    },
+    endTime: {
+        type: Date,
+        required: true
+    },
     note: String,
-    container: mongoose.Schema.Types.ObjectId,
-    user: mongoose.Schema.Types.ObjectId,
+    container: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
 });
 
 const BookingMongoModel = mongoose.model('Booking', bookingSchema);
@@ -31,9 +43,14 @@ const remove = async (bookingId) => {
     return BookingMongoModel.deleteOne({_id: bookingId});
 }
 
+const findAllBookings = async () => {
+    return BookingMongoModel.find();
+}
+
 module.exports = {
     save,
     update,
     findById,
-    remove
+    remove,
+    findAllBookings,
 }

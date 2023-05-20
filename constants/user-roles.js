@@ -1,5 +1,7 @@
-export const UserRoles = {
+const UserRoles = {
     USER: 'USER',
     ADMIN: 'ADMIN',
     COMPANY: 'COMPANY'
 }
+
+module.exports = UserRoles;
