@@ -1,3 +1,5 @@
+const lodash = require('lodash');
+
 class Cell {
     constructor(row, column, value) {
         this.row = row;
@@ -10,9 +12,16 @@ class PathNode extends Cell {
     constructor(data) {
         super(data.row, data.column, data.value);
         this.included = data.included;
-        this.targetFuncLowerBound = data.targetFuncLowerBound;
+        // this.targetFuncLowerBound = data.targetFuncLowerBound;
     }
+}
 
+class HangingNode {
+    constructor(data) {
+        this.path = data.path;
+        this.targetFuncLowerBound = data.targetFuncLowerBound;
+        this.matrixSnapshot = data.matrixSnapshot;
+    }
 }
 
 class Row {
@@ -22,12 +31,19 @@ class Row {
     }
 }
 
+// const distancesExample = [
+//     [Infinity, 1, 2, 3, 4],
+//     [14, Infinity, 15, 16, 5],
+//     [13, 20, Infinity, 17, 6],
+//     [12, 19, 18, Infinity, 7],
+//     [11, 10, 9, 8, Infinity]
+// ];
+
 const distancesExample = [
-    [Infinity,  1, 2, 3, 4],
-    [14, Infinity, 15, 16, 5],
-    [13, 20, Infinity, 17, 6],
-    [12, 19, 18, Infinity, 7],
-    [11, 10, 9, 8, Infinity]
+    [Infinity, 10, 15, 20],
+    [10, Infinity, 35, 25],
+    [15, 35, Infinity, 30],
+    [20, 25, 30, Infinity]
 ];
 
 const route = [];
@@ -37,58 +53,107 @@ const tsp = (distances) => {
     // create matrix-object
     const matrix = getMatrixObject(distances);
 
-
     // matrix reduction
-    const { matrix: reducedMatrix, H: matrixReductionConstant } = matrixReduction(matrix);
+    const {matrix: reducedMatrix, H: matrixReductionConstant} = matrixReduction(matrix);
     // console.log(reducedMatrix.map(row => row.cells.map(cell => cell.value)), matrixReductionConstant);
 
     getTspPath(reducedMatrix, matrixReductionConstant)
 }
 
-const getTspPath = (matrix, matrixReductionConstant, path = [], hangingNodes = [], targetFuncLowestResult = Infinity) => {
+const getTspPath = (matrix, matrixReductionConstant) => {
 
-    // TODO if zeroes in diagonal, it may be result
-    //
-    const zeroCellsSet = defineZeroCellsSet(matrix);
-    const maxCharacteristicsSum = Math.max(...zeroCellsSet.map(cell => cell.sumOfMins));
-    const maxCharacteristicsSumZeroCell = zeroCellsSet.find(cell => cell.sumOfMins === maxCharacteristicsSum);
+    let hangingNodes = [];
+    let lowestFullPathFunctionResult = Infinity;
 
-    // next 2 steps must be in reverse order but then hard to find cell to prevent it from looping
-    // preventFromLoopingForCell(matrix, maxCharacteristicsSumZeroCell.to, maxCharacteristicsSumZeroCell.from);
-    const { matrix: matrixWithLowerRank, processedNode } = getLowerMatrixRank(matrix, maxCharacteristicsSumZeroCell.from, maxCharacteristicsSumZeroCell.to);
-    preventFromLoopingForCell(matrixWithLowerRank, path, maxCharacteristicsSumZeroCell.to, maxCharacteristicsSumZeroCell.from);
+    let currentPath = [];
+    let currentTargetFuncLowerBoundary = matrixReductionConstant;
 
-    const { matrix: reducedLowerRankMatrix, H: lowerRankedMatrixReductionConstant } = matrixReduction(matrixWithLowerRank);
+    while (true) {
 
-    const targetFunctionLowerBoundForPositiveNode = matrixReductionConstant + lowerRankedMatrixReductionConstant;
-    const targetFunctionLowerBoundForNegativeNode = matrixReductionConstant + maxCharacteristicsSum;
+        // TODO if zeroes in diagonal, it may be result
+        //
+        const zeroCellsSet = defineZeroCellsSet(matrix);
+        const maxCharacteristicsSum = Math.max(...zeroCellsSet.map(cell => cell.sumOfMins));
+        const maxCharacteristicsSumZeroCell = zeroCellsSet.find(cell => cell.sumOfMins === maxCharacteristicsSum);
 
-    const includedNode = new PathNode({
-        ...processedNode,
-        included: true,
-        targetFuncLowerBound: targetFunctionLowerBoundForPositiveNode
-    });
+        const {
+            matrix: matrixWithLowerRank,
+            processedCell
+        } = getLowerMatrixRank(matrix, maxCharacteristicsSumZeroCell.from, maxCharacteristicsSumZeroCell.to);
+        preventFromLoopingForCell(matrixWithLowerRank, currentPath, maxCharacteristicsSumZeroCell.to, maxCharacteristicsSumZeroCell.from);
 
-    const excludedNode = new PathNode({
-        ...processedNode,
-        included: false,
-        targetFuncLowerBound: targetFunctionLowerBoundForNegativeNode
-    });
+        const {
+            matrix: reducedLowerRankMatrix,
+            H: lowerRankedMatrixReductionConstant
+        } = matrixReduction(matrixWithLowerRank);
 
-    let currentTargetFuncLowerBoundary;
+        const targetFunctionLowerBoundForPositiveNode = currentTargetFuncLowerBoundary + lowerRankedMatrixReductionConstant;
+        const targetFunctionLowerBoundForNegativeNode = currentTargetFuncLowerBoundary + maxCharacteristicsSum;
 
-    if (targetFunctionLowerBoundForPositiveNode <= targetFunctionLowerBoundForNegativeNode) {
-        path.push(includedNode);
-        hangingNodes.push(excludedNode);
-        currentTargetFuncLowerBoundary = targetFunctionLowerBoundForPositiveNode;
-    } else {
-        path.push(excludedNode);
-        hangingNodes.push(includedNode);
-        currentTargetFuncLowerBoundary = targetFunctionLowerBoundForNegativeNode;
-    }
+        // included node is when path would contain [2;5], excluded is when path would not contain [2;5]
+        // not the best naming
+        const includedNode = new PathNode({
+            ...processedCell,
+            included: true,
+            targetFuncLowerBound: targetFunctionLowerBoundForPositiveNode
+        });
 
-    if (matrixWithLowerRank.length !== 2) {
-        getTspPath(reducedLowerRankMatrix, currentTargetFuncLowerBoundary, path, hangingNodes, targetFuncLowestResult);
+        const excludedNode = new PathNode({
+            ...processedCell,
+            included: false,
+            targetFuncLowerBound: targetFunctionLowerBoundForNegativeNode
+        });
+
+        if (targetFunctionLowerBoundForPositiveNode <= targetFunctionLowerBoundForNegativeNode) {
+            hangingNodes.push(createHangingNodeForExcludedNode(excludedNode, matrix, currentPath, targetFunctionLowerBoundForNegativeNode));
+            currentPath.push(includedNode);
+            currentTargetFuncLowerBoundary = targetFunctionLowerBoundForPositiveNode;
+            matrix = reducedLowerRankMatrix;
+        } else {
+            currentPath.push(excludedNode);
+            hangingNodes.push(createHangingNodeForIncludedNode(includedNode, reducedLowerRankMatrix, currentPath, targetFunctionLowerBoundForPositiveNode));
+            currentTargetFuncLowerBoundary = targetFunctionLowerBoundForNegativeNode;
+            preventFromLoopingForCell(matrix, currentPath, excludedNode.row, excludedNode.column);
+        }
+
+        if (matrixWithLowerRank.length === 2) {
+            if (lowestFullPathFunctionResult === Infinity || lowestFullPathFunctionResult > currentTargetFuncLowerBoundary) {
+                lowestFullPathFunctionResult = currentTargetFuncLowerBoundary;
+            }
+            completeMatrixAndPath(matrixWithLowerRank, currentPath);
+
+            if (hangingNodes.length) {
+                const hangingNodeWithLowestBound = getHangingNodeWithLowestBound(hangingNodes);
+                if (hangingNodeWithLowestBound.targetFuncLowerBound < currentTargetFuncLowerBoundary) {
+                    hangingNodes = hangingNodes.filter(node => node !== hangingNodeWithLowestBound);
+                    hangingNodes.push(new HangingNode({
+                        path: lodash.cloneDeep(currentPath),
+                        targetFuncLowerBound: currentTargetFuncLowerBoundary,
+                        matrixSnapshot: lodash.cloneDeep(matrixWithLowerRank),
+                    }))
+                    matrix = lodash.cloneDeep(hangingNodeWithLowestBound.matrixSnapshot);
+                    currentPath = lodash.cloneDeep(hangingNodeWithLowestBound.path);
+                    currentTargetFuncLowerBoundary = hangingNodeWithLowestBound.targetFuncLowerBound;
+
+                    // matrix reduction from starting point
+                    const {matrix: reducedMatrix, H: matrixReductionConstant} = matrixReduction(matrix);
+                    matrix = reducedMatrix;
+
+                } else {
+                    // todo return
+                }
+            }
+        } else if (currentTargetFuncLowerBoundary > lowestFullPathFunctionResult) {
+            const hangingNodeWithLowestBound = getHangingNodeWithLowestBound(hangingNodes);
+            if (hangingNodeWithLowestBound.matrixSnapshot.length === 2) {
+                console.log('finish', hangingNodeWithLowestBound, lowestFullPathFunctionResult);
+                return;
+            } else {
+                matrix = hangingNodeWithLowestBound.matrixSnapshot;
+                currentPath = hangingNodeWithLowestBound.path;
+                currentTargetFuncLowerBoundary = hangingNodeWithLowestBound.targetFuncLowerBound;
+            }
+        }
     }
 }
 
@@ -167,6 +232,7 @@ const defineZeroCellsSet = (matrix) => {
 }
 
 const getLowerMatrixRank = (matrix, rowToDeleteNum, columnToDeleteNum) => {
+    matrix = lodash.cloneDeep(matrix);
     const rowToDelete = matrix.find(row => row.position === rowToDeleteNum);
     const processedNode = rowToDelete.cells.find(cell => cell.column === columnToDeleteNum);
     matrix = matrix.filter(row => row.position !== rowToDelete.position);
@@ -175,7 +241,7 @@ const getLowerMatrixRank = (matrix, rowToDeleteNum, columnToDeleteNum) => {
     }
     return {
         matrix,
-        processedNode
+        processedCell: processedNode
     };
 }
 
@@ -207,7 +273,59 @@ const preventFromLoopingForCell = (matrix, path, row, column) => {
             }
         }
     }
+}
 
+const createHangingNodeForExcludedNode = (excludedNode, matrixSnapshot, currentPath, targetFunctionLowerBoundForNegativeNode) => {
+    const pathForThisNode = lodash.cloneDeep(currentPath);
+    pathForThisNode.push(lodash.cloneDeep(excludedNode));
+    const matrixForThisNode = lodash.cloneDeep(matrixSnapshot);
+    preventFromLoopingForCell(matrixForThisNode, pathForThisNode, excludedNode.row, excludedNode.column);
+    return new HangingNode({
+        path: pathForThisNode,
+        targetFuncLowerBound: targetFunctionLowerBoundForNegativeNode,
+        matrixSnapshot: matrixForThisNode,
+    })
+}
+
+const createHangingNodeForIncludedNode = (includedNode, matrixWithLowerRankSnapshot, currentPath, targetFunctionLowerBoundForPositiveNode) => {
+    const pathForThisNode = lodash.cloneDeep(currentPath);
+    pathForThisNode.push(lodash.cloneDeep(includedNode));
+    return new HangingNode({
+        path: pathForThisNode,
+        targetFuncLowerBound: targetFunctionLowerBoundForPositiveNode,
+        matrixSnapshot: lodash.cloneDeep(matrixWithLowerRankSnapshot),
+    });
+}
+
+const getHangingNodeWithLowestBound = (hangingNodes) => {
+    const lowestBoundValue = Math.min(...hangingNodes.map(node => node.targetFuncLowerBound));
+    const nodeWithLowestBound = hangingNodes.find(node => node.targetFuncLowerBound === lowestBoundValue);
+    return nodeWithLowestBound;
+}
+
+const completeMatrixAndPath = (matrix, path) => {
+    const cellWithInfinityValue = matrix.map(row => row.cells)
+        .reduce((array, row) => {
+            array.push(...row);
+            console.log(array);
+            return array;
+        }, [])
+        .find(cell => cell.value === Infinity);
+    const guaranteedCell = matrix.find(row => row.position === cellWithInfinityValue.row).cells.find(cell => cell.column !== cellWithInfinityValue.column);
+    path.push(new PathNode({
+        row: guaranteedCell.row,
+        column: guaranteedCell.column,
+        value: guaranteedCell.value,
+        included: true,
+    }));
+    preventFromLoopingForCell(matrix, path, guaranteedCell.column, guaranteedCell.row);
+    const lastCell = matrix.find(row => row.position !== guaranteedCell.row).cells.find(cell => cell.column !== guaranteedCell.column);
+    path.push(new PathNode({
+        row: lastCell.row,
+        column: guaranteedCell.column,
+        included: true,
+        value: lastCell.value
+    }))
 }
 
 tsp(distancesExample);
