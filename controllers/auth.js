@@ -3,7 +3,7 @@ const userService = require('../services/user');
 const bcrypt = require('bcrypt');
 
 const BadRequestHttpError = require('../http-errors/bad-request')
-const {UserRoles} = require("../constants/user-roles");
+const UserRoles = require("../constants/user-roles");
 require('dotenv').config();
 
 const login = async (req, res, next) => {

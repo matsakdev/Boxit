@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const {initPassport} = require("./middleware/passport");
+const initRouter = require("./routes");
+const ErrorHandler = require('./http-errors/error-handler');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +16,8 @@ const API_PORT = process.env.API_PORT;
 
 initPassport(app);
 initRouter(app);
+
+app.use(ErrorHandler);
 
 const MONGO_CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING;
 
@@ -29,4 +33,6 @@ const start = async () => {
         process.exit(1);
     }
 }
+
+start();
 

@@ -1,7 +1,23 @@
-const ContainerTypes = require('../constants/container-types');
 const mongoose = require('mongoose');
 
-const indicatorSchema = new mongoose.Schema({name: String})
+const ContainerTypes = require('../constants/container-types');
+const ContainerStatuses = require('../constants/container-statuses');
+const ContainerCategories = require('../constants/container-categories');
+
+const Indicators = require('../constants/indicators')
+const IndicatorStatuses = require('../constants/indicator-statuses');
+
+const indicatorSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        enum: Object.keys(Indicators)
+    },
+    status: {
+        type: String,
+        enum: Object.keys(IndicatorStatuses),
+        default: IndicatorStatuses.TURNED_OFF
+    }
+})
 
 const containerSchema = new mongoose.Schema({
     title: String,
@@ -10,14 +26,22 @@ const containerSchema = new mongoose.Schema({
     length: Number,
     yearOfCreation: Date,
     location: String,
+    type: {
+        type: String,
+        enum: Object.keys(ContainerTypes)
+    },
     categories: {
         type: [String],
-        enum: Object.keys(ContainerTypes)
+        enum: Object.keys(ContainerCategories)
     },
     indicators: {
         type: [indicatorSchema],
     },
-    isAvailable: Boolean,
+    status: {
+        type: String,
+        enum: Object.keys(ContainerStatuses),
+        default: ContainerStatuses.AVAILABLE,
+    },
 });
 
 const ContainerMongoModel = mongoose.model('Container', containerSchema);
@@ -52,7 +76,7 @@ const findAllContainersOfCategories = async (categories, showUnavailable) => {
                 $elemMatch: {
                     $in: categories
                 }
-            }, {isAvailable: true}]
+            }, {status: ContainerStatuses.AVAILABLE}]
 
         }
     }
@@ -67,6 +91,10 @@ const deleteContainer = async (containerId) => {
     return ContainerMongoModel.deleteOne({_id: containerId});
 }
 
+const findAllContainers = async () => {
+    return ContainerMongoModel.find();
+}
+
 module.exports = {
     save,
     update,
@@ -74,4 +102,5 @@ module.exports = {
     findAllContainersOfCategories,
     findAllContainersNearTheLocation,
     deleteContainer,
+    findAllContainers,
 }
