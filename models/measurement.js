@@ -19,4 +19,4 @@ class Measurement {
     }
 }
 
-export default Measurement;
+module.exports = Location;
