@@ -15,7 +15,6 @@ const createContainer = async (req, res, next) => {
     } catch (error) {
         return res.status(400).json(new BadRequest(error.message));
     }
-
 }
 
 const removeContainer = async (req, res, next) => {
