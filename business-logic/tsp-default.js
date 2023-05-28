@@ -38,13 +38,20 @@ class Row {
 //     [12, 19, 18, Infinity, 7],
 //     [11, 10, 9, 8, Infinity]
 // ];
-
 const distancesExample = [
-    [Infinity, 10, 15, 20],
-    [10, Infinity, 35, 25],
-    [15, 35, Infinity, 30],
-    [20, 25, 30, Infinity]
+    [Infinity, 10, 25, 25, 10],
+    [1, Infinity, 10, 15, 2],
+    [8, 9, Infinity, 20, 10],
+    [14, 10, 24, Infinity, 15],
+    [10, 8, 25, 27, Infinity]
 ];
+
+// const distancesExample = [
+//     [Infinity, 10, 15, 20],
+//     [10, Infinity, 35, 25],
+//     [15, 35, Infinity, 30],
+//     [20, 25, 30, Infinity]
+// ];
 
 const route = [];
 
@@ -109,6 +116,7 @@ const getTspPath = (matrix, matrixReductionConstant) => {
             currentPath.push(includedNode);
             currentTargetFuncLowerBoundary = targetFunctionLowerBoundForPositiveNode;
             matrix = reducedLowerRankMatrix;
+            preventFromLoopingForCell(matrix, currentPath, includedNode.row, includedNode.column);
         } else {
             currentPath.push(excludedNode);
             hangingNodes.push(createHangingNodeForIncludedNode(includedNode, reducedLowerRankMatrix, currentPath, targetFunctionLowerBoundForPositiveNode));
@@ -257,21 +265,26 @@ const preventFromLoopingForCell = (matrix, path, row, column) => {
 
     // if we have path, we must prevent all nodes, into which we can get from processed cell <from>
     // because it would be cycled
-    if (path.length) {
-        for (const cell of path) {
-            if (cell.row === row && cell.included) {
-                const rowToPreventNum = cell.column;
-                const columnToPreventNum = column;
+    if (path.length && matrix.length !== 1) {
+        const allMatrixCells = matrix.reduce((acc, row) => acc.concat(row.cells), []);
+        const allStartPointsFromCurrentPath = path.filter(node => node.included).map(node => node.row);
+        const allCellsToPrevent = allMatrixCells.filter(cell => cell.row === column && allStartPointsFromCurrentPath.includes(cell.column));
 
-                const rowToPrevent = matrix.find(currentRow => currentRow.position === rowToPreventNum);
-                if (rowToPrevent) {
-                    const cellToPrevent = rowToPrevent.cells.find(currentCell => currentCell.column === columnToPreventNum);
-                    if (cellToPrevent) {
-                        cellToPrevent.value = Infinity;
-                    }
-                }
-            }
-        }
+        allCellsToPrevent.forEach(cell => cell.value = Infinity);
+        // for (const cell of path) {
+        //     if (cell.row === row && cell.included) {
+        //         const rowToPreventNum = cell.column;
+        //         const columnToPreventNum = column;
+        //
+        //         const rowToPrevent = matrix.find(currentRow => currentRow.position === rowToPreventNum);
+        //         if (rowToPrevent) {
+        //             const cellToPrevent = rowToPrevent.cells.find(currentCell => currentCell.column === columnToPreventNum);
+        //             if (cellToPrevent) {
+        //                 cellToPrevent.value = Infinity;
+        //             }
+        //         }
+        //     }
+        // }
     }
 }
 
@@ -289,6 +302,7 @@ const createHangingNodeForExcludedNode = (excludedNode, matrixSnapshot, currentP
 
 const createHangingNodeForIncludedNode = (includedNode, matrixWithLowerRankSnapshot, currentPath, targetFunctionLowerBoundForPositiveNode) => {
     const pathForThisNode = lodash.cloneDeep(currentPath);
+    pathForThisNode.pop();
     pathForThisNode.push(lodash.cloneDeep(includedNode));
     return new HangingNode({
         path: pathForThisNode,
@@ -304,28 +318,46 @@ const getHangingNodeWithLowestBound = (hangingNodes) => {
 }
 
 const completeMatrixAndPath = (matrix, path) => {
-    const cellWithInfinityValue = matrix.map(row => row.cells)
-        .reduce((array, row) => {
-            array.push(...row);
-            console.log(array);
-            return array;
-        }, [])
-        .find(cell => cell.value === Infinity);
-    const guaranteedCell = matrix.find(row => row.position === cellWithInfinityValue.row).cells.find(cell => cell.column !== cellWithInfinityValue.column);
-    path.push(new PathNode({
-        row: guaranteedCell.row,
-        column: guaranteedCell.column,
-        value: guaranteedCell.value,
-        included: true,
-    }));
-    preventFromLoopingForCell(matrix, path, guaranteedCell.column, guaranteedCell.row);
-    const lastCell = matrix.find(row => row.position !== guaranteedCell.row).cells.find(cell => cell.column !== guaranteedCell.column);
-    path.push(new PathNode({
-        row: lastCell.row,
-        column: guaranteedCell.column,
-        included: true,
-        value: lastCell.value
-    }))
+    const allMatrixCells = matrix.reduce((acc, row) => row.cells, []);
+
+    allMatrixCells.forEach(cell => {
+        if (!createsLoop(cell, path)) {
+            path.push(new PathNode({
+                row: cell.row,
+                column: cell.column,
+                value: cell.value,
+                included: true,
+            }));
+            preventFromLoopingForCell(matrix, path, cell.column, cell.row);
+            const lastCell = matrix.find(row => row.position !== cell.row).cells.find(curCell => curCell.column !== cell.column);
+            path.push(new PathNode({
+                row: lastCell.row,
+                column: lastCell.column,
+                included: true,
+                value: lastCell.value
+            }))
+        }
+    })
+
+    // const cellWithInfinityValue = matrix.map(row => row.cells)
+    //     .reduce((array, row) => {
+    //         array.push(...row);
+    //         console.log(array);
+    //         return array;
+    //     }, [])
+    //     .find(cell => cell.value === Infinity);
+    // const guaranteedCell = matrix.find(row => row.position === cellWithInfinityValue.row).cells.find(cell => cell.column !== cellWithInfinityValue.column);
+    // path.push(new PathNode({
+    //     row: guaranteedCell.row,
+    //     column: guaranteedCell.column,
+    //     value: guaranteedCell.value,
+    //     included: true,
+    // }));
+}
+
+const createsLoop = (cell, currentPath) => {
+    const allStartPointsFromCurrentPath = currentPath.map(node => node.row);
+    return allStartPointsFromCurrentPath.includes(cell.column);
 }
 
 tsp(distancesExample);
