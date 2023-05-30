@@ -267,10 +267,19 @@ const preventFromLoopingForCell = (matrix, path, row, column) => {
     // because it would be cycled
     if (path.length && matrix.length !== 1) {
         const allMatrixCells = matrix.reduce((acc, row) => acc.concat(row.cells), []);
-        const allStartPointsFromCurrentPath = path.filter(node => node.included).map(node => node.row);
-        const allCellsToPrevent = allMatrixCells.filter(cell => cell.row === column && allStartPointsFromCurrentPath.includes(cell.column));
+        // const allStartPointsFromCurrentPath = path.filter(node => node.included).map(node => node.row);
+        // const allCellsToPrevent = allMatrixCells.filter(cell => cell.row === column && allStartPointsFromCurrentPath.includes(cell.column));
+        //
+        // allCellsToPrevent.forEach(cell => cell.value = Infinity);
 
-        allCellsToPrevent.forEach(cell => cell.value = Infinity);
+
+        const allEndPointsFromCurrentPath = path.filter(node => node.included).map(node => node.column);
+        const otherCellsToPrevent = allMatrixCells.filter(cell => allEndPointsFromCurrentPath.includes(cell.row) && cell.column === column)
+        otherCellsToPrevent.forEach(cell => cell.value = Infinity);
+
+        // const allEndPointsFromCurrentPath = path.filter(node => node.included).map(node => node.column);
+        // const otherCellsToPrevent = allMatrixCells.filter(cell => cell.column === )
+
         // for (const cell of path) {
         //     if (cell.row === row && cell.included) {
         //         const rowToPreventNum = cell.column;
