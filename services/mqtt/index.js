@@ -38,6 +38,9 @@ const initMqttConnection = () => {
     console.log(message.toString())
     // TODO when it would be more than 1 type of message
     // it's necessary to define income message type
+    if (message.toString().startsWith("book") || message.toString().startsWith("end")) {
+      return;
+    }
     const bookingId = 1;
     saveMeasurement(topic, JSON.parse(message.toString()), bookingId);
   });

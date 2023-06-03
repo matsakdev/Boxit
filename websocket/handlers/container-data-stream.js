@@ -3,6 +3,7 @@ const WebsocketSubscribeTypes = require('../../constants/websocket-subscribe-typ
 
 const subscribeOnContainerDataStream = (webSocketMessage, webSocketSession) => {
   const containerId = webSocketMessage.containerId;
+  console.log(`subscribe to ${containerId}`);
   LiveDataStreamingService.addSubscriber(webSocketSession, {
     type: WebsocketSubscribeTypes.GET_CONTAINER_INFO,
     containerId
