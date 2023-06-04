@@ -38,20 +38,20 @@ class Row {
 //     [12, 19, 18, Infinity, 7],
 //     [11, 10, 9, 8, Infinity]
 // ];
-const distancesExample = [
-    [Infinity, 10, 25, 25, 10],
-    [1, Infinity, 10, 15, 2],
-    [8, 9, Infinity, 20, 10],
-    [14, 10, 24, Infinity, 15],
-    [10, 8, 25, 27, Infinity]
-];
-
 // const distancesExample = [
-//     [Infinity, 10, 15, 20],
-//     [10, Infinity, 35, 25],
-//     [15, 35, Infinity, 30],
-//     [20, 25, 30, Infinity]
+//     [Infinity, 10, 25, 25, 10],
+//     [1, Infinity, 10, 15, 2],
+//     [8, 9, Infinity, 20, 10],
+//     [14, 10, 24, Infinity, 15],
+//     [10, 8, 25, 27, Infinity]
 // ];
+
+const distancesExample = [
+    [Infinity, 10, 15, 20],
+    [10, Infinity, 35, 25],
+    [15, 35, Infinity, 30],
+    [20, 25, 30, Infinity]
+];
 
 const route = [];
 
@@ -60,17 +60,30 @@ const tsp = (distances) => {
     // create matrix-object
     const matrix = getMatrixObject(distances);
 
+    // console.log(reducedMatrix.map(row => row.cells.map(cell => cell.value)), matrixReductionConstant);
+    const defaultWayLength = getDefaultWayLength(matrix);
+    console.log(defaultWayLength)
+
     // matrix reduction
     const {matrix: reducedMatrix, H: matrixReductionConstant} = matrixReduction(matrix);
-    // console.log(reducedMatrix.map(row => row.cells.map(cell => cell.value)), matrixReductionConstant);
 
-    getTspPath(reducedMatrix, matrixReductionConstant)
+    const tspPath = getTspPath(reducedMatrix, matrixReductionConstant, defaultWayLength)
+    console.log(tspPath);
 }
 
-const getTspPath = (matrix, matrixReductionConstant) => {
+const getDefaultWayLength = (matrix) => {
+    let wayLength = 0;
+    for (let i = 0; i < matrix.length; i++) {
+        const nextIndex = i === (matrix.length - 1) ? 0 : i + 1;
+        wayLength += matrix[i].cells.find(cell => cell.column === nextIndex).value;
+    }
+    return wayLength;
+}
+
+const getTspPath = (matrix, matrixReductionConstant, defaultWayLength) => {
 
     let hangingNodes = [];
-    let lowestFullPathFunctionResult = Infinity;
+    let lowestFullPathFunctionResult = defaultWayLength;
 
     let currentPath = [];
     let currentTargetFuncLowerBoundary = matrixReductionConstant;
@@ -79,9 +92,12 @@ const getTspPath = (matrix, matrixReductionConstant) => {
 
         // TODO if zeroes in diagonal, it may be result
         //
+
         const zeroCellsSet = defineZeroCellsSet(matrix);
         const maxCharacteristicsSum = Math.max(...zeroCellsSet.map(cell => cell.sumOfMins));
         const maxCharacteristicsSumZeroCell = zeroCellsSet.find(cell => cell.sumOfMins === maxCharacteristicsSum);
+
+        console.log(maxCharacteristicsSumZeroCell);
 
         const {
             matrix: matrixWithLowerRank,
@@ -113,14 +129,20 @@ const getTspPath = (matrix, matrixReductionConstant) => {
 
         if (targetFunctionLowerBoundForPositiveNode <= targetFunctionLowerBoundForNegativeNode) {
             hangingNodes.push(createHangingNodeForExcludedNode(excludedNode, matrix, currentPath, targetFunctionLowerBoundForNegativeNode));
-            currentPath.push(includedNode);
+            currentPath.push(lodash.cloneDeep(includedNode));
             currentTargetFuncLowerBoundary = targetFunctionLowerBoundForPositiveNode;
             matrix = reducedLowerRankMatrix;
             preventFromLoopingForCell(matrix, currentPath, includedNode.row, includedNode.column);
         } else {
-            currentPath.push(excludedNode);
+            currentPath.push(lodash.cloneDeep(excludedNode));
             hangingNodes.push(createHangingNodeForIncludedNode(includedNode, reducedLowerRankMatrix, currentPath, targetFunctionLowerBoundForPositiveNode));
             currentTargetFuncLowerBoundary = targetFunctionLowerBoundForNegativeNode;
+            setInfinityToCell(excludedNode, matrix);
+
+            const {
+                matrix: reducedMatrix,
+            } = matrixReduction(matrix);
+            matrix = reducedMatrix;
             preventFromLoopingForCell(matrix, currentPath, excludedNode.row, excludedNode.column);
         }
 
@@ -132,7 +154,7 @@ const getTspPath = (matrix, matrixReductionConstant) => {
 
             if (hangingNodes.length) {
                 const hangingNodeWithLowestBound = getHangingNodeWithLowestBound(hangingNodes);
-                if (hangingNodeWithLowestBound.targetFuncLowerBound < currentTargetFuncLowerBoundary) {
+                if (hangingNodeWithLowestBound && hangingNodeWithLowestBound.targetFuncLowerBound < currentTargetFuncLowerBoundary) {
                     hangingNodes = hangingNodes.filter(node => node !== hangingNodeWithLowestBound);
                     hangingNodes.push(new HangingNode({
                         path: lodash.cloneDeep(currentPath),
@@ -148,18 +170,29 @@ const getTspPath = (matrix, matrixReductionConstant) => {
                     matrix = reducedMatrix;
 
                 } else {
-                    // todo return
+                    return {
+                        currentPath,
+                        currentTargetFuncLowerBoundary
+                    };
                 }
             }
-        } else if (currentTargetFuncLowerBoundary > lowestFullPathFunctionResult) {
+        } else {
             const hangingNodeWithLowestBound = getHangingNodeWithLowestBound(hangingNodes);
-            if (hangingNodeWithLowestBound.matrixSnapshot.length === 2) {
-                console.log('finish', hangingNodeWithLowestBound, lowestFullPathFunctionResult);
-                return;
-            } else {
-                matrix = hangingNodeWithLowestBound.matrixSnapshot;
-                currentPath = hangingNodeWithLowestBound.path;
-                currentTargetFuncLowerBoundary = hangingNodeWithLowestBound.targetFuncLowerBound;
+            if (currentTargetFuncLowerBoundary > lowestFullPathFunctionResult || currentTargetFuncLowerBoundary > hangingNodeWithLowestBound.targetFuncLowerBound) {
+                if (hangingNodeWithLowestBound.matrixSnapshot.length === 2) {
+                    console.log('finish', hangingNodeWithLowestBound, lowestFullPathFunctionResult);
+                    return;
+                } else {
+                    hangingNodes.push(new HangingNode({
+                        path: lodash.cloneDeep(currentPath),
+                        targetFuncLowerBound: lodash.cloneDeep(currentTargetFuncLowerBoundary),
+                        matrixSnapshot: lodash.cloneDeep(matrix)
+                    }))
+                    matrix = hangingNodeWithLowestBound.matrixSnapshot;
+                    currentPath = hangingNodeWithLowestBound.path;
+                    currentTargetFuncLowerBoundary = hangingNodeWithLowestBound.targetFuncLowerBound;
+                    hangingNodes = hangingNodes.filter(node => node !== hangingNodeWithLowestBound);
+                }
             }
         }
     }
@@ -239,6 +272,12 @@ const defineZeroCellsSet = (matrix) => {
     return zeroCellsSet;
 }
 
+const setInfinityToCell = (cellToMakeInfinity, matrix) => {
+    const allCells = matrix.reduce((acc, currentRow) => acc.concat(currentRow.cells), []);
+    const cellToProcess = allCells.find(cell => cell.row === cellToMakeInfinity.row && cell.column === cellToMakeInfinity.column);
+    cellToProcess.value = Infinity;
+}
+
 const getLowerMatrixRank = (matrix, rowToDeleteNum, columnToDeleteNum) => {
     matrix = lodash.cloneDeep(matrix);
     const rowToDelete = matrix.find(row => row.position === rowToDeleteNum);
@@ -301,6 +340,7 @@ const createHangingNodeForExcludedNode = (excludedNode, matrixSnapshot, currentP
     const pathForThisNode = lodash.cloneDeep(currentPath);
     pathForThisNode.push(lodash.cloneDeep(excludedNode));
     const matrixForThisNode = lodash.cloneDeep(matrixSnapshot);
+    setInfinityToCell(excludedNode, matrixForThisNode);
     preventFromLoopingForCell(matrixForThisNode, pathForThisNode, excludedNode.row, excludedNode.column);
     return new HangingNode({
         path: pathForThisNode,
@@ -337,7 +377,7 @@ const completeMatrixAndPath = (matrix, path) => {
                 value: cell.value,
                 included: true,
             }));
-            preventFromLoopingForCell(matrix, path, cell.column, cell.row);
+            // preventFromLoopingForCell(matrix, path, cell.column, cell.row);
             const lastCell = matrix.find(row => row.position !== cell.row).cells.find(curCell => curCell.column !== cell.column);
             path.push(new PathNode({
                 row: lastCell.row,
@@ -365,8 +405,9 @@ const completeMatrixAndPath = (matrix, path) => {
 }
 
 const createsLoop = (cell, currentPath) => {
-    const allStartPointsFromCurrentPath = currentPath.map(node => node.row);
-    return allStartPointsFromCurrentPath.includes(cell.column);
+    const allStartPointsFromCurrentPath = currentPath.filter(node => node.included).map(node => node.row);
+    const allEndPointsFromCurrentPath = currentPath.filter(node => node.included).map(node => node.column);
+    return allStartPointsFromCurrentPath.includes(cell.column) && allEndPointsFromCurrentPath.includes(cell.row);
 }
 
 tsp(distancesExample);
