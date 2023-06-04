@@ -23,11 +23,17 @@
     "moment": "^2.29.4",
     "mongodb": "^5.6.0",
     "mongoose": "^7.1.1",
+    "mqtt": "^4.3.7",
     "nodemon": "^2.0.22",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
     "zip-lib": "^0.7.3"
-    "passport-jwt": "^4.0.1",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.41.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.27.5"
   }
 }

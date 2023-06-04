@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
 
 const measurementSchema = new mongoose.Schema({
-  measurementId: mongoose.Schema.Types.ObjectId,
   containerId: mongoose.Schema.Types.ObjectId,
-  indicatorId: mongoose.Schema.Types.ObjectId,
   timestamp: Date,
-  value: String
+  values: {
+    type: Map,
+    of: String
+  }
 });
 
 const MeasurementMongoModel = mongoose.model("Measurement", measurementSchema);

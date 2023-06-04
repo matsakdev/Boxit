@@ -4,6 +4,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const {initPassport} = require("./middleware/passport");
 const initRouter = require("./routes");
+const initMqttConnection = require('./services/mqtt');
+const initWebSockets = require('./websocket');
 const ErrorHandler = require('./http-errors/error-handler');
 require('dotenv').config();
 
@@ -16,6 +18,8 @@ const API_PORT = process.env.API_PORT;
 
 initPassport(app);
 initRouter(app);
+initMqttConnection();
+initWebSockets(app);
 
 app.use(ErrorHandler);
 
