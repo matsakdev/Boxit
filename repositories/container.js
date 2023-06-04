@@ -8,7 +8,7 @@ const Indicators = require('../constants/indicators')
 const IndicatorStatuses = require('../constants/indicator-statuses');
 
 const indicatorSchema = new mongoose.Schema({
-    name: {
+    type: {
         type: String,
         enum: Object.keys(Indicators)
     },

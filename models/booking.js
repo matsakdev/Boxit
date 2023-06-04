@@ -6,6 +6,18 @@ class Booking {
         this.container = data.container;
         this.user = data.user;
     }
+
+    static getModel(dbModel) {
+        return dbModel ?
+            new Booking({
+                id: dbModel._id,
+                startTime: dbModel.startTime,
+                endTime: dbModel.endTime,
+                note: dbModel.note,
+                container: dbModel.container,
+                user: dbModel.user,
+            }) : null;
+    }
 }
 
-export default Booking;
+module.exports = Booking;

@@ -10,6 +10,20 @@ class Container {
         this.categories = data.categories;
         this.location = data.location;
     }
+
+    static getModel(dbModel) {
+        return dbModel ? new Container({
+            id: dbModel._id,
+            height: dbModel.height,
+            width: dbModel.width,
+            length: dbModel.length,
+            indicators: dbModel.indicators,
+            yearOfCreation: dbModel.yearOfCreation,
+            title: dbModel.title,
+            categories: dbModel.categories,
+            location: dbModel.location,
+        }) : null;
+    }
 }
 
-export default Container;
+module.exports = Container;
