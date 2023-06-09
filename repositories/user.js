@@ -47,10 +47,20 @@ const findByEmail = email => {
     return UserMongoModel.findOne({email});
 }
 
+const findAllUsers = async () => {
+    return UserMongoModel.find();
+}
+
+const findAllTestUsers = async () => {
+    return UserMongoModel.find({isTestUser: true});
+}
+
 module.exports = {
     register,
     update,
     findByUsername,
     findById,
     findByEmail,
+    findAllUsers,
+    findAllTestUsers
 }

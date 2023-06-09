@@ -1,6 +1,7 @@
 const containerRepo = require("../repositories/container");
 const measurementRepo = require('../repositories/measurement');
 const LiveDataStreamingService = require('../services/live-data-streaming')
+const ContainerModel = require("../models/container");
 
 const createContainer = async (container) => {
   try {
@@ -24,7 +25,8 @@ const getContainerById = async (containerId) => {
 };
 
 const getAllContainers = async () => {
-  return containerRepo.findAllContainers();
+  const allContainers = await containerRepo.findAllContainers();
+  return allContainers.map(container => ContainerModel.getModel(container));
 };
 
 const saveMeasurement = async (containerId, measurement, bookingId = null) => {
@@ -42,6 +44,29 @@ const saveMeasurement = async (containerId, measurement, bookingId = null) => {
     LiveDataStreamingService.shareContainerInfoLiveData(containerId, savedMeasurement);
 };
 
+const getContainerMeasurements = async (containerId) => {
+  return measurementRepo.findAllMeasurementsOfContainer(containerId);
+}
+
+const getContainerMeasurementsInRange = async (containerId, timeFrom, timeTo) => {
+  return measurementRepo.findAllMeasurementsOfContainerInTimeRange(containerId, timeFrom, timeTo);
+}
+
+const getContainerMeasurementsAfter = async (containerId, timeFrom) => {
+  return measurementRepo.findAllMeasurementsOfContainerAfterTime(containerId, timeFrom);
+}
+
+const getContainersBasicStatistics = async () => {
+  const containersCountByStatus = await containerRepo.getContainersCountByStatus();
+  const containersCountByLocation = await containerRepo.getContainersCountByLocation();
+  const containersCountByType = await containerRepo.getContainersCountByType();
+  return {
+    containersCountByStatus,
+    containersCountByLocation,
+    containersCountByType
+  }
+}
+
 
 module.exports = {
   createContainer,
@@ -49,5 +74,9 @@ module.exports = {
   updateContainer,
   getContainerById,
   getAllContainers,
-  saveMeasurement
+  saveMeasurement,
+  getContainerMeasurements,
+  getContainerMeasurementsAfter,
+  getContainerMeasurementsInRange,
+  getContainersBasicStatistics
 };

@@ -1,6 +1,11 @@
 const dumpHandler = require("../business-logic/dump-service");
 const dumpService = require("../services/dump-service");
 const ServerError = require("../http-errors/server-error");
+const statisticsService = require('../business-logic/statistics');
+const containersService = require('../services/container');
+const userService = require('../services/user');
+const bookingService = require('../services/booking');
+const bookingGenerator = require('../data-generators/bookings');
 const AdmZip = require("adm-zip");
 
 const createMongoDump = async (req, res, next) => {
@@ -31,11 +36,34 @@ const getAllDumps = async (req, res, next) => {
     console.error(error);
     return next(new ServerError(`Cannot get dumps. Please, try once more or notify the dev team about the problem. Error: ${error}`));
   }
+}
 
+const getContainersStatistics = async (req, res, next) => {
+  try {
+    const containersStatistics = await statisticsService.getContainersStatistics();
+    return res.status(201).json(containersStatistics);
+  } catch (error) {
+    console.error(error);
+    return next(new ServerError(`Cannot create statistics. Error: ${error}`));
+  }
+};
+
+const generateBookingsRecords = async (req, res, next) => {
+  const {year, month} = req.params;
+  const allContainers = await containersService.getAllContainers();
+  const allUsers = await userService.findAllTestUsers();
+  const allBookings = await bookingGenerator.BookingsGenerator(allContainers, allUsers, year, month);
+  const saveResult = await bookingService.bulkSaveBookings(allBookings);
+  return res.status(201).json({
+    generatedDocumentsCount: allBookings.length,
+    saveResult
+  });
 }
 
 module.exports = {
   createMongoDump,
   restoreDatabaseFromDump,
-  getAllDumps
+  getAllDumps,
+  getContainersStatistics,
+  generateBookingsRecords
 };

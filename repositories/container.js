@@ -95,6 +95,31 @@ const findAllContainers = async () => {
     return ContainerMongoModel.find();
 }
 
+const getContainersCountByType = async () => {
+    return ContainerMongoModel.aggregate([
+        { $group: { _id: "$type", count: { $sum: 1 } } },
+    ]);
+}
+
+const getContainersCountByLocation = async () => {
+    return ContainerMongoModel.aggregate([
+        { $group: { _id: "$location", count: { $sum: 1 } } },
+    ]);
+}
+
+const getContainersCountByStatus = async () => {
+    return ContainerMongoModel.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+}
+
+const getMeasurementsStatistics = async () => {
+    return ContainerMongoModel.aggregate([
+        { $unwind: "$indicators" },
+        { $group: { _id: "$indicators.type", averageValue: { $avg: "$indicators.value" }, minValue: { $min: "$indicators.value" }, maxValue: { $max: "$indicators.value" } } },
+    ]);
+}
+
 module.exports = {
     save,
     update,
@@ -103,4 +128,8 @@ module.exports = {
     findAllContainersNearTheLocation,
     deleteContainer,
     findAllContainers,
+    getContainersCountByType,
+    getContainersCountByStatus,
+    getContainersCountByLocation,
+    getMeasurementsStatistics
 }

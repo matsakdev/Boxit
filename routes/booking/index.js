@@ -7,6 +7,8 @@ const bookingRouter = express.Router();
 
 bookingRouter.get('/:bookingId', bookingController.getBooking);
 bookingRouter.get('/', bookingController.getAllBookings);
+bookingRouter.get('/month/:year/:month', bookingController.getBookingsForMonth); // todo from param to body
+bookingRouter.get('/month/current', bookingController.getBookingsForCurrentMonth); // todo from param to body
 bookingRouter.post('/', bookingController.createBooking);
 bookingRouter.delete('/:bookingId', bookingController.removeBooking);
 bookingRouter.put('/:bookingId', bookingController.updateBookingInfo)

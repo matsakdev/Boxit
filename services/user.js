@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const userRepo = require('../repositories/user')
+const { User } = require("../models/user");
 
 const register = async (user, password) => {
     bcrypt.genSalt(10, (err, salt) => {
@@ -14,15 +15,15 @@ const register = async (user, password) => {
 }
 
 const findByUsername = username => {
-    return userRepo.findByUsername(username);
+    return User.getModel(userRepo.findByUsername(username));
 }
 
 const findByEmail = email => {
-    return userRepo.findByEmail(email);
+    return User.getModel(userRepo.findByEmail(email));
 }
 
 const findById = id => {
-    return userRepo.findById(id);
+    return User.getModel(userRepo.findById(id));
 }
 
 const updateLoginInfo = userId => userRepo.update(
@@ -52,6 +53,16 @@ const getSignedJwtToken = data => {
     })
 }
 
+const findAllUsers = async () => {
+    const users = await userRepo.findAllUsers();
+    return users.map(user => User.getModel(user));
+}
+
+const findAllTestUsers = async () => {
+    const users = await userRepo.findAllTestUsers();
+    return users.map(user => User.getModel(user));
+}
+
 module.exports = {
     register,
     updateLoginInfo,
@@ -59,4 +70,6 @@ module.exports = {
     findByUsername,
     findByEmail,
     findById,
+    findAllUsers,
+    findAllTestUsers,
 }
