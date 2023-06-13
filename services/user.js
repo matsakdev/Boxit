@@ -18,8 +18,9 @@ const findByUsername = username => {
     return User.getModel(userRepo.findByUsername(username));
 }
 
-const findByEmail = email => {
-    return User.getModel(userRepo.findByEmail(email));
+const findByEmail = async (email) => {
+    const user = await userRepo.findByEmail(email)
+    return user ? User.getModel(user) : null;
 }
 
 const findById = id => {

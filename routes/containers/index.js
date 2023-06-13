@@ -15,5 +15,5 @@ containerRouter.put('/:containerId', containerController.updateContainerInfo)
 
 
 module.exports = (app) => {
-    app.use('/api/containers', authenticate, containerRouter);
+    app.use('/api/containers', containerRouter);
 }

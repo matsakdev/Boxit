@@ -15,5 +15,5 @@ bookingRouter.put('/:bookingId', bookingController.updateBookingInfo)
 
 
 module.exports = (app) => {
-    app.use('/api/bookings', authenticate, bookingRouter);
+    app.use('/api/bookings', bookingRouter);
 }

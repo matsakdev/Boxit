@@ -73,7 +73,7 @@ const getBookingsForMonth = async (req, res, next) => {
 
 const getBookingsForCurrentMonth = async (req, res, next) => {
   const currentYear = moment().year();
-  const currentMonth = moment().month();
+  const currentMonth = moment().month() + 1;
   try {
     const bookings = await bookingService.getAllBookingsForMonth(currentYear, currentMonth);
     return res.status(200).json(bookings);

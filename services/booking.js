@@ -1,6 +1,7 @@
 const bookingRepo = require("../repositories/booking");
 const BadRequestError = require("../http-errors/bad-request");
 const moment = require("moment");
+const BookingModel = require('../models/booking');
 
 const createBooking = async (booking) => {
   try {
@@ -41,7 +42,8 @@ const getAllBookingsForMonth = async (year, month) => {
 }
 
 const getAllBookingsForContainer = async (containerId) => {
-  return bookingRepo.findContainerBookings(containerId);
+  const bookings = await bookingRepo.findContainerBookings(containerId);
+  return bookings.map(booking => BookingModel.getModel(booking));
 };
 
 const getAllBookingsForContainerInTimeRange = async (containerId, timeFrom, timeTo) => {

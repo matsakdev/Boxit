@@ -21,7 +21,11 @@ const updateContainer = async (containerId, infoToUpdate) => {
 };
 
 const getContainerById = async (containerId) => {
-  return containerRepo.findById(containerId);
+  // const container = await containerRepo.findById(containerId); // todo very strange appearance
+  const allContainers = await getAllContainers();
+  const container = allContainers.find(container => container.id.toString() === containerId);
+  container.id = containerId;
+  return ContainerModel.getModel(container);
 };
 
 const getAllContainers = async () => {
@@ -66,7 +70,6 @@ const getContainersBasicStatistics = async () => {
     containersCountByType
   }
 }
-
 
 module.exports = {
   createContainer,

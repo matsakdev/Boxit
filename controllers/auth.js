@@ -11,6 +11,10 @@ const login = async (req, res, next) => {
 
     const user = await userService.findByEmail(email);
 
+    if (!user) {
+        return res.status(401).json({message: 'Wrong login'});
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
         return await passportRequestLogin(req, res, next, user);

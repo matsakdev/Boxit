@@ -7,8 +7,10 @@ class Container {
         this.indicators = data.indicators;
         this.yearOfCreation = data.yearOfCreation;
         this.title = data.title;
+        this.type = data.type;
         this.categories = data.categories;
         this.location = data.location;
+        this.status = data.status;
     }
 
     static getModel(dbModel) {
@@ -22,6 +24,8 @@ class Container {
             title: dbModel.title,
             categories: dbModel.categories,
             location: dbModel.location,
+            type: dbModel.type,
+            status: dbModel.status,
         }) : null;
     }
 }

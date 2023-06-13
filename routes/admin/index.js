@@ -9,7 +9,7 @@ const adminRouter = express.Router();
 adminRouter.get('/dump-data', adminController.createMongoDump);
 adminRouter.get('/dumps', adminController.getAllDumps);
 adminRouter.post('/dump-restore/:dumpId', adminController.restoreDatabaseFromDump);
-adminRouter.get('/statistics/containers', adminController.getContainersStatistics);
+adminRouter.get('/statistics/containers', adminController.createContainerStatisticsWorksheet);
 adminRouter.get('/generators/bookings/:year/:month', adminController.generateBookingsRecords);
 
 module.exports = (app) => {
