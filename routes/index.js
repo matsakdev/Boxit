@@ -8,7 +8,7 @@ const initRouter = (app) => {
     userRouter(app);
     containerRouter(app);
     bookingRouter(app);
-    adminRouter2(app);
+    adminRouter(app);
 }
 
 module.exports = initRouter;
